@@ -1,0 +1,28 @@
+name: decode-jpg
+# Added Oct 17 2026 for Pinterest v2 pins 21+. Decodes b64jpg/<name>.b64 to <name>.jpg at the repo root.
+# Add-only: never overwrites a file that already exists. The original decode.yml (b64/ -> .png) is untouched.
+on:
+  push:
+    paths: ['b64jpg/**']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: decode-jpg
+  cancel-in-progress: false
+jobs:
+  d:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - run: |
+          added=0
+          for f in b64jpg/*.b64; do
+            n="$(basename "$f" .b64).jpg"
+            if [ ! -e "$n" ]; then base64 -d "$f" > "$n"; git add "$n"; added=1; fi
+          done
+          [ "$added" = 1 ] || exit 0
+          git config user.name bot; git config user.email bot@users.noreply.github.com
+          git commit -m "decode jpgs"; git push
